@@ -2,10 +2,11 @@ import unittest
 import tweepy
 import requests
 import json
+import twitter_info
 
 ## SI 206 - HW
 ## COMMENT WITH:
-## Your section day/time:
+## Your section day/time: Thursday, 3:00pm
 ## Any names of people you worked with on this assignment:
 
 
@@ -46,17 +47,17 @@ import json
 ## Get your secret values to authenticate to Twitter. You may replace each of these 
 ## with variables rather than filling in the empty strings if you choose to do the secure way 
 ## for EC points
-consumer_key = "" 
-consumer_secret = ""
-access_token = ""
-access_token_secret = ""
+
 ## Set up your authentication to Twitter
+consumer_key = twitter_info.consumer_key
+consumer_secret = twitter_info.consumer_secret
+access_token = twitter_info.access_token
+access_token_secret = twitter_info.access_token_secret
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)
+
 # Set up library to grab stuff from twitter with your authentication, and 
 # return it in a JSON-formatted way
-
-api = tweepy.API(auth, parser=tweepy.parsers.JSONParser()) 
 
 ## Write the rest of your code here!
 
@@ -64,12 +65,36 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ## 1. Set up the caching pattern start -- the dictionary and the try/except 
 ## 		statement shown in class.
 
+cache_fname = "cached_results.json"
+try:
+    cache_file = open(cache_fname, 'r')
+    cache_contents = cache_file.read() 
+    cacheDict = json.loads(cache_contents) 
+    cache_file.close() 
+except:
+    cacheDict = {}
 
 
 ## 2. Write a function to get twitter data that works with the caching pattern, 
 ## 		so it either gets new data or caches data, depending upon what the input 
 ##		to search for is. 
-
+def get_t(search_term):
+    if search_term in cacheDict:
+        return cacheDict[search_term] # if search_term is already in the cache, just return that information instead of requesting new info
+    else:
+        print ("Requesting new data...")
+        api = tweepy.API(auth, parser=tweepy.parsers.JSONParser()) # grabbing twitter data with authentications 
+        results = api.search(q = search_term, count = 5) # dictionary; searching for 5 tweets containing user inputted search term
+        try:
+            cacheDict[search_term] = results
+            dumped_json_cache = json.dumps(cacheDict) # converting cacheDict to json formatted string
+            fw = open(cache_fname, "w") # opening cache to write to it
+            fw.write(dumped_json_cache) # writing to cache
+            fw.close()
+            return cacheDict[search_term]
+        except:
+            print ("Wasn't in cache, not a valid search")
+            return None
 
 
 ## 3. Using a loop, invoke your function, save the return value in a variable, and explore the 
@@ -81,9 +106,15 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ## 		content from 5 tweets, as shown in the linked example.
 
 
+prompt3times = ["prompt1", "prompt2", "prompt3"] # making a list with 3 elements so the for loop runs 3 times
 
+for t in prompt3times:
+    user_search = input("Enter search term: ")
 
-
-
+    list_of_tweets = get_t(user_search)["statuses"] # getting a list of 5 tweets' statuses (which is a big dictionary)
+    for tweet in list_of_tweets:
+        print(tweet["text"]) # getting the text from each tweet
+        print("CREATED AT: ", tweet["created_at"]) # getting the time each tweet was created (GMT time)
+        print("\n")
 
 
